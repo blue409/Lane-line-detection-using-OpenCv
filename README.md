@@ -95,42 +95,42 @@ white_binary = np.zeros_like(gray_img)
 white_binary[(gray_img > 200) & (gray_img <= 255)] = 1
 The third transformation is on the saturation component using the HLS colorspace. This is particularly important to detect yellow lines on light concrete road.
 
-# Convert image to HLS
+ Convert image to HLS
 hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
 H = hls[:,:,0]
 S = hls[:,:,2]
 sat_binary = np.zeros_like(S)
 
-# Detect pixels that have a high saturation value
+ Detect pixels that have a high saturation value
 sat_binary[(S > 90) & (S <= 255)] = 1
 The fourth transformation is on the hue component with values from 10 to 25, which were identified as corresponding to yellow.
 
 hue_binary =  np.zeros_like(H)
 
-# Detect pixels that are yellow using the hue component
+ Detect pixels that are yellow using the hue component
 hue_binary[(H > 10) & (H <= 25)] = 1
 binary_thr
 
 Lane Line Detection Using Histogram
 The lane line detection is performed on binary thresholded images that have already been undistorted and warped. Initially a histogram is computed on the image. This means that the pixel values are summed on each column to detect the most probable x position of left and right lane lines.
 
-# Take a histogram of the bottom half of the image
+ Take a histogram of the bottom half of the image
 histogram = np.sum(binary_warped[binary_warped.shape[0]//2:,:], axis=0)
 
 # Find the peak of the left and right halves of the histogram
-# These will be the starting point for the left and right lines
+ These will be the starting point for the left and right lines
 midpoint = np.int(histogram.shape[0]//2)
 leftx_base = np.argmax(histogram[:midpoint])
 rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 Starting with these base positions on the bottom of the image, the sliding window method is applied going upwards searching for line pixels. Lane pixels are considered when the x and y coordinates are within the area defined by the window. When enough pixels are detected to be confident they are part of a line, their average position is computed and kept as starting point for the next upward window.
 
-# Choose the number of sliding windows
+ Choose the number of sliding windows
 nwindows = 9
 
-# Set the width of the windows +/- margin
+ Set the width of the windows +/- margin
 margin = 100
 
-# Set minimum number of pixels found to recenter window
+ Set minimum number of pixels found to recenter window
 minpix = 50
 
 # Identify window boundaries in x and y (and right and left)
@@ -147,7 +147,7 @@ good_left_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) &
 good_right_inds = ((nonzeroy >= win_y_low) & (nonzeroy < win_y_high) & 
 (nonzerox >= win_xright_low) &  (nonzerox < win_xright_high)).nonzero()[0]
        
-# Append these indices to the lists
+ Append these indices to the lists
 left_lane_inds.append(good_left_inds)
 right_lane_inds.append(good_right_inds)
 All these pixels are put together in a list of their x and y coordinates. This is done symmetrically on both lane lines. leftx, lefty, rightx, righty pixel positions are returned from the function and afterwards, a second-degree polynomial is fitted on each left and right side to find the best line fit of the selected pixels.
@@ -172,7 +172,7 @@ right_lane_inds = ((nonzerox > (prev_right_fit[0]*(nonzeroy**2) + prev_right_fit
                 prev_right_fit[2] - margin)) & (nonzerox < (prev_right_fit[0]*(nonzeroy**2) + 
                 prev_right_fit[1]*nonzeroy + prev_right_fit[2] + margin))).nonzero()[0]
 
-# Again, extract left and right line pixel positions
+ Again, extract left and right line pixel positions
 leftx = nonzerox[left_lane_inds]
 lefty = nonzeroy[left_lane_inds] 
 rightx = nonzerox[right_lane_inds]
@@ -186,15 +186,15 @@ To calculate the radius and the vehicle's position on the road in meters, scalin
 
 A polynomial fit is used to make the conversion. Using the x coordinates of the aligned pixels from the fitted line of each right and left lane line, the conversion factors are applied and polynomial fit is performed on each.
 
-# Define conversions in x and y from pixels space to meters
+ Define conversions in x and y from pixels space to meters
 ym_per_pix = 30/720 # meters per pixel in y dimension
 xm_per_pix = 3.7/700 # meters per pixel in x dimension
     
 left_fit_cr = np.polyfit(ploty*ym_per_pix, left_fitx*xm_per_pix, 2)
 right_fit_cr = np.polyfit(ploty*ym_per_pix, right_fitx*xm_per_pix, 2)
 
-# Define y-value where we want radius of curvature
-# We'll choose the maximum y-value, corresponding to the bottom of the image
+ Define y-value where we want radius of curvature
+ We'll choose the maximum y-value, corresponding to the bottom of the image
 y_eval = np.max(ploty)
     
 # Calculation of R_curve (radius of curvature)
@@ -202,25 +202,25 @@ left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)*
 right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
 The radius of the curvature is calculated using the y point at the bottom of the image. To calculate the vehicle’s position, the polynomial fit in pixels is used to determine the x position of the left and right lane corresponding to the y at the bottom of the image.
 
-# Define conversion in x from pixels space to meters
+ Define conversion in x from pixels space to meters
 xm_per_pix = 3.7/700 # meters per pixel in x dimension
 
-# Choose the y value corresponding to the bottom of the image
+ Choose the y value corresponding to the bottom of the image
 y_max = binary_warped.shape[0]
 
-# Calculate left and right line positions at the bottom of the image
+ Calculate left and right line positions at the bottom of the image
 left_x_pos = left_fit[0]*y_max**2 + left_fit[1]*y_max + left_fit[2]
 right_x_pos = right_fit[0]*y_max**2 + right_fit[1]*y_max + right_fit[2] 
 
-# Calculate the x position of the center of the lane 
+ Calculate the x position of the center of the lane 
 center_lanes_x_pos = (left_x_pos + right_x_pos)//2
 
-# Calculate the deviation between the center of the lane and the center of the picture
-# The car is assumed to be placed in the center of the picture
-# If the deviation is negative, the car is on the felt hand side of the center of the lane
+ Calculate the deviation between the center of the lane and the center of the picture
+ The car is assumed to be placed in the center of the picture
+ If the deviation is negative, the car is on the felt hand side of the center of the lane
 veh_pos = ((binary_warped.shape[1]//2) - center_lanes_x_pos) * xm_per_pix 
 The average of these two values gives the position of the center of the lane in the image. If the lane’s center is shifted to the right by nbp amount of pixels that means that the car is shifted to the left by nbp * xm_per_pix meters. This is based on the assumption that the camera is mounted on the central axis of the vehicle.
 
 Video Output
-Check out the restulting video! You can download the video here: project_video_output.mp4
+Check out the restulting video! You can download the video here: https://github.com/blue409/Lane-line-detection-using-OpenCv/blob/main/project_video_output.mp4
 
